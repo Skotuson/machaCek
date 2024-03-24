@@ -1,5 +1,6 @@
-#include <iostream>
 #include <functional>
+#include <iostream>
+#include <cassert>
 #include <random>
 
 const size_t DICE_MAX = 6;
@@ -32,13 +33,18 @@ struct Dice
         m_Roll = dist(gen);
     }
 
+    friend std::ostream &operator<<(std::ostream &os, const Dice &d)
+    {
+        return os << d.count();
+    }
+
 private:
     size_t m_Roll = UNROLLED;
 };
 
 struct Throw
 {
-    Throw(Dice &d1, Dice &d2, MComparator comp)
+    Throw(const Dice &d1, const Dice &d2, MComparator comp)
         : m_First(d1),
           m_Second(d2),
           m_Comp(comp)
@@ -50,6 +56,21 @@ struct Throw
         return m_Comp(*this, t);
     }
 
+    bool operator==(const Throw &t)
+    {
+        return !m_Comp(*this, t) && !m_Comp(t, *this);
+    }
+
+    bool operator!=(const Throw &t)
+    {
+        return !(*this == t);
+    }
+
+    bool operator<=(const Throw &t)
+    {
+        return *this < t || *this == t;
+    }
+
     size_t native(void) const
     {
         if (first() == second())
@@ -57,9 +78,17 @@ struct Throw
         return 0;
     }
 
-    size_t value(void)
+    size_t value(void) const
     {
+        if (native())
+            return native();
         return std::max(first(), second()) * 10 + std::min(first(), second());
+    }
+
+    friend std::ostream &operator<<(std::ostream &os, const Throw &t)
+    {
+        return os << "[" << t.first() << "," << t.second() << "] = "
+                  << (t.native() ? std::to_string(t.native()) + " natives" : (t.value() == MACHACEK ? "MACHACEK" : std::to_string(t.value())));
     }
 
 private:
@@ -80,8 +109,11 @@ private:
 
 bool MACHACEK_COMPARATOR(const Throw &t1, const Throw &t2)
 {
-    //Machacek
-    
+    // Machacek
+    if (t1.value() == MACHACEK)
+    {
+        return t2.value() != MACHACEK;
+    }
 
     // Native case
     size_t c1, c2;
@@ -89,9 +121,21 @@ bool MACHACEK_COMPARATOR(const Throw &t1, const Throw &t2)
     {
         return c1 < c2;
     }
+
+    return t1.value() < t2.value();
 }
 
 int main(void)
 {
+    std::cout << Throw(Dice(3), Dice(6), MACHACEK_COMPARATOR) << std::endl;
+    std::cout << Throw(Dice(4), Dice(6), MACHACEK_COMPARATOR) << std::endl;
+    std::cout << Throw(Dice(5), Dice(6), MACHACEK_COMPARATOR) << std::endl;
+    std::cout << Throw(Dice(1), Dice(6), MACHACEK_COMPARATOR) << std::endl;
+    std::cout << Throw(Dice(1), Dice(1), MACHACEK_COMPARATOR) << std::endl;
+    std::cout << Throw(Dice(2), Dice(1), MACHACEK_COMPARATOR) << std::endl;
+    std::cout << Throw(Dice(3), Dice(3), MACHACEK_COMPARATOR) << std::endl;
+    std::cout << Throw(Dice(4), Dice(4), MACHACEK_COMPARATOR) << std::endl;
+    std::cout << Throw(Dice(5), Dice(5), MACHACEK_COMPARATOR) << std::endl;
+
     return 0;
 }
