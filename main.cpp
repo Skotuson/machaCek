@@ -135,12 +135,12 @@ bool MACHACEK_COMPARATOR(const Throw &t1, const Throw &t2)
         return c1 < c2;
     }
 
-    else if(t1.native() && !t2.native())
+    else if (t1.native() && !t2.native())
     {
         return false;
     }
 
-    else if(!t1.native() && t2.native())
+    else if (!t1.native() && t2.native())
     {
         return true;
     }
@@ -222,6 +222,8 @@ int main(void)
     assert(Throw(Dice(6), Dice(6), MACHACEK_COMPARATOR) < Throw(Dice(1), Dice(2), MACHACEK_COMPARATOR));
     assert(!(Throw(Dice(1), Dice(1), MACHACEK_COMPARATOR) < Throw(Dice(5), Dice(4), MACHACEK_COMPARATOR)));
     assert(!(Throw(Dice(4), Dice(4), MACHACEK_COMPARATOR) < Throw(Dice(5), Dice(4), MACHACEK_COMPARATOR)));
+    assert(Throw(Dice(6), Dice(3), MACHACEK_COMPARATOR) < Throw(Dice(1), Dice(2), MACHACEK_COMPARATOR));
+    assert(Throw(Dice(5), Dice(3), MACHACEK_COMPARATOR) < Throw(Dice(1), Dice(2), MACHACEK_COMPARATOR));
 
     std::string choice = "";
     Player player;
@@ -240,19 +242,21 @@ int main(void)
         if (!player.health())
         {
             std::cout << "You lost!" << std::endl;
+            break;
         }
 
         if (!opponent.health())
         {
             std::cout << "You won!" << std::endl;
+            break;
         }
 
         if (!playerTurn)
         {
             Throw opponentThrow = opponent.getThrow();
+            Player opponentCpy = opponent;
             while (opponentThrow < lastRound)
             {
-                Player opponentCpy = opponent;
                 opponentCpy.roll();
                 opponentThrow = opponentCpy.getThrow();
             }
@@ -267,14 +271,14 @@ int main(void)
                 {
                     std::cout << "Opponent really did throw that (-1 for you)" << std::endl;
                     player.hit();
-                    lastRound = opponentThrow;
+                    lastRound = Throw(Dice(3), Dice(1), MACHACEK_COMPARATOR);
                 }
 
                 else if (choice[0] == 'b' && opponentThrow != opponent.getThrow())
                 {
                     std::cout << "Opponent lied (-1 for him)" << std::endl;
                     opponent.hit();
-                    lastRound = Throw(Dice(3),Dice(1), MACHACEK_COMPARATOR);
+                    lastRound = Throw(Dice(3), Dice(1), MACHACEK_COMPARATOR);
                 }
                 opponent.roll();
                 playerTurn = true;
@@ -283,7 +287,6 @@ int main(void)
 
         else
         {
-            player.roll();
             std::cout << "You rolled " << player << "." << std::endl;
             std::cout << "-> t(ell the truth), f(ake)[1-6][1-6]: ";
             std::getline(std::cin >> std::ws, choice);
@@ -294,7 +297,8 @@ int main(void)
                 {
                     std::cout << "You told the truth. The truth is, the throw isn't enough (-1 for you)" << std::endl;
                     player.hit();
-                    lastRound = Throw(Dice(3),Dice(1), MACHACEK_COMPARATOR);
+                    lastRound = Throw(Dice(3), Dice(1), MACHACEK_COMPARATOR);
+                    continue;
                 }
 
                 int smaller = 0;
@@ -315,16 +319,17 @@ int main(void)
                 {
                     std::cout << "Liar liar, pants on fire (-1 for you)" << std::endl;
                     player.hit();
-                    lastRound = Throw(Dice(3),Dice(1), MACHACEK_COMPARATOR);
+                    lastRound = Throw(Dice(3), Dice(1), MACHACEK_COMPARATOR);
                 }
 
                 else if (opponentAccuse && !playerLying)
                 {
                     std::cout << "Opponent just couldn't believe it (-1 for him)" << std::endl;
                     opponent.hit();
-                    lastRound = player.getThrow();
+                    lastRound = Throw(Dice(3), Dice(1), MACHACEK_COMPARATOR);
                 }
 
+                player.roll();
                 playerTurn = false;
                 playerLying = false;
             }
