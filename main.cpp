@@ -133,7 +133,7 @@ bool MACHACEK_COMPARATOR(const Throw &t1, const Throw &t2)
 
 struct Player
 {
-    Player(size_t health = PLAYER_HEALTH, const Throw & thr = Throw(Dice(), Dice(), MACHACEK_COMPARATOR))
+    Player(size_t health = PLAYER_HEALTH, const Throw &thr = Throw(Dice(), Dice(), MACHACEK_COMPARATOR))
         : m_Health(health),
           m_Throw(thr)
     {
@@ -154,7 +154,7 @@ struct Player
         return false;
     }
 
-    friend std::ostream &operator<<(std::ostream &os, const Player & p)
+    friend std::ostream &operator<<(std::ostream &os, const Player &p)
     {
         return os << p.m_Throw;
     }
@@ -175,23 +175,25 @@ int main(void)
     Player player;
     Player opponent;
 
+    player.roll();
+    opponent.roll();
+
     bool playerTurn = false;
 
     while (choice != "stop")
     {
         if (!playerTurn)
         {
-            opponent.roll();
             std::cout << "Opponent says: \"I have " << opponent << "\"" << std::endl;
             std::cout << "-> b(ullshit), t(rust): ";
 
             std::getline(std::cin >> std::ws, choice);
 
-            if (choice.size() != 1)
+            if (choice.size() == 1 && (choice[0] == 'b' || choice[0] == 't'))
             {
+                opponent.roll();
+                playerTurn = true;
             }
-
-            playerTurn = true;
         }
 
         else
@@ -200,10 +202,6 @@ int main(void)
             std::cout << "You rolled " << player << "." << std::endl;
             std::cout << "-> t(ell the truth), f(ake)[1-6][1-6]: ";
             std::getline(std::cin >> std::ws, choice);
-
-            if (!choice.size() || (choice != "t" && choice.size() != 3))
-            {
-            }
 
             playerTurn = false;
         }
