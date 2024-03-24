@@ -123,6 +123,11 @@ bool MACHACEK_COMPARATOR(const Throw &t1, const Throw &t2)
         return t2.value() != MACHACEK;
     }
 
+    else if (t2.value() == MACHACEK)
+    {
+        return t1.value() != MACHACEK;
+    }
+
     // Native case
     size_t c1, c2;
     if ((c1 = t1.native()) && (c2 = t2.native()))
@@ -232,12 +237,12 @@ int main(void)
 
     while (choice != "stop")
     {
-        if (!player.hit())
+        if (!player.health())
         {
             std::cout << "You lost!" << std::endl;
         }
 
-        if (!opponent.hit())
+        if (!opponent.health())
         {
             std::cout << "You won!" << std::endl;
         }
