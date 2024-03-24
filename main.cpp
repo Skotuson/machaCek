@@ -7,6 +7,7 @@ const size_t DICE_MAX = 6;
 const size_t DICE_MIN = 1;
 const size_t UNROLLED = -1;
 const size_t MACHACEK = 21;
+const size_t PLAYER_HEALTH = 4;
 
 struct Throw;
 
@@ -130,6 +131,39 @@ bool MACHACEK_COMPARATOR(const Throw &t1, const Throw &t2)
     return t1.value() < t2.value();
 }
 
+struct Player
+{
+    Player(size_t health = PLAYER_HEALTH, const Throw & thr = Throw(Dice(), Dice(), MACHACEK_COMPARATOR))
+        : m_Health(health),
+          m_Throw(thr)
+    {
+    }
+
+    void roll(void)
+    {
+        m_Throw.reroll();
+    }
+
+    bool hit(void)
+    {
+        if (m_Health)
+        {
+            m_Health--;
+            return true;
+        }
+        return false;
+    }
+
+    friend std::ostream &operator<<(std::ostream &os, const Player & p)
+    {
+        return os << p.m_Throw;
+    }
+
+private:
+    size_t m_Health;
+    Throw m_Throw;
+};
+
 int main(void)
 {
     assert(Throw(Dice(1), Dice(3), MACHACEK_COMPARATOR) < Throw(Dice(2), Dice(3), MACHACEK_COMPARATOR));
@@ -138,8 +172,8 @@ int main(void)
     assert(Throw(Dice(6), Dice(6), MACHACEK_COMPARATOR) < Throw(Dice(1), Dice(2), MACHACEK_COMPARATOR));
 
     std::string choice = "";
-    Throw player(Dice(), Dice(), MACHACEK_COMPARATOR);
-    Throw opponent(Dice(), Dice(), MACHACEK_COMPARATOR);
+    Player player;
+    Player opponent;
 
     bool playerTurn = false;
 
@@ -147,21 +181,32 @@ int main(void)
     {
         if (!playerTurn)
         {
-            opponent.reroll();
+            opponent.roll();
             std::cout << "Opponent says: \"I have " << opponent << "\"" << std::endl;
-            std::cout << "-> b(bullshit), t(trust): ";
+            std::cout << "-> b(ullshit), t(rust): ";
+
+            std::getline(std::cin >> std::ws, choice);
+
+            if (choice.size() != 1)
+            {
+            }
+
             playerTurn = true;
         }
 
         else
         {
-            player.reroll();
+            player.roll();
             std::cout << "You rolled " << player << "." << std::endl;
-            std::cout << "-> t(truth), f[1-6][1-6](fake): ";
-        }
+            std::cout << "-> t(ell the truth), f(ake)[1-6][1-6]: ";
+            std::getline(std::cin >> std::ws, choice);
 
-        std::getline(std::cin >> std::ws, choice);
-    
+            if (!choice.size() || (choice != "t" && choice.size() != 3))
+            {
+            }
+
+            playerTurn = false;
+        }
     }
     return 0;
 }
