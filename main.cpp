@@ -51,6 +51,12 @@ struct Throw
     {
     }
 
+    void reroll(void)
+    {
+        m_First.roll();
+        m_Second.roll();
+    }
+
     bool operator<(const Throw &t)
     {
         return m_Comp(*this, t);
@@ -87,8 +93,7 @@ struct Throw
 
     friend std::ostream &operator<<(std::ostream &os, const Throw &t)
     {
-        return os << "[" << t.first() << "," << t.second() << "] = "
-                  << (t.native() ? std::to_string(t.native()) + " natives" : (t.value() == MACHACEK ? "MACHACEK" : std::to_string(t.value())));
+        return os << (t.native() ? std::to_string(t.native()) + " natives" : (t.value() == MACHACEK ? "MACHACEK" : std::to_string(t.value())));
     }
 
 private:
@@ -127,15 +132,36 @@ bool MACHACEK_COMPARATOR(const Throw &t1, const Throw &t2)
 
 int main(void)
 {
-    std::cout << Throw(Dice(3), Dice(6), MACHACEK_COMPARATOR) << std::endl;
-    std::cout << Throw(Dice(4), Dice(6), MACHACEK_COMPARATOR) << std::endl;
-    std::cout << Throw(Dice(5), Dice(6), MACHACEK_COMPARATOR) << std::endl;
-    std::cout << Throw(Dice(1), Dice(6), MACHACEK_COMPARATOR) << std::endl;
-    std::cout << Throw(Dice(1), Dice(1), MACHACEK_COMPARATOR) << std::endl;
-    std::cout << Throw(Dice(2), Dice(1), MACHACEK_COMPARATOR) << std::endl;
-    std::cout << Throw(Dice(3), Dice(3), MACHACEK_COMPARATOR) << std::endl;
-    std::cout << Throw(Dice(4), Dice(4), MACHACEK_COMPARATOR) << std::endl;
-    std::cout << Throw(Dice(5), Dice(5), MACHACEK_COMPARATOR) << std::endl;
+    assert(Throw(Dice(1), Dice(3), MACHACEK_COMPARATOR) < Throw(Dice(2), Dice(3), MACHACEK_COMPARATOR));
+    assert(Throw(Dice(4), Dice(5), MACHACEK_COMPARATOR) < Throw(Dice(5), Dice(6), MACHACEK_COMPARATOR));
+    assert(Throw(Dice(1), Dice(1), MACHACEK_COMPARATOR) < Throw(Dice(4), Dice(4), MACHACEK_COMPARATOR));
+    assert(Throw(Dice(6), Dice(6), MACHACEK_COMPARATOR) < Throw(Dice(1), Dice(2), MACHACEK_COMPARATOR));
 
+    std::string choice = "";
+    Throw player(Dice(), Dice(), MACHACEK_COMPARATOR);
+    Throw opponent(Dice(), Dice(), MACHACEK_COMPARATOR);
+
+    bool playerTurn = false;
+
+    while (choice != "stop")
+    {
+        if (!playerTurn)
+        {
+            opponent.reroll();
+            std::cout << "Opponent says: \"I have " << opponent << "\"" << std::endl;
+            std::cout << "-> b(bullshit), t(trust): ";
+            playerTurn = true;
+        }
+
+        else
+        {
+            player.reroll();
+            std::cout << "You rolled " << player << "." << std::endl;
+            std::cout << "-> t(truth), f[1-6][1-6](fake): ";
+        }
+
+        std::getline(std::cin >> std::ws, choice);
+    
+    }
     return 0;
 }
