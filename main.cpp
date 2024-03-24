@@ -130,6 +130,16 @@ bool MACHACEK_COMPARATOR(const Throw &t1, const Throw &t2)
         return c1 < c2;
     }
 
+    else if(t1.native() && !t2.native())
+    {
+        return false;
+    }
+
+    else if(!t1.native() && t2.native())
+    {
+        return true;
+    }
+
     return t1.value() < t2.value();
 }
 
@@ -205,6 +215,8 @@ int main(void)
     assert(Throw(Dice(4), Dice(5), MACHACEK_COMPARATOR) < Throw(Dice(5), Dice(6), MACHACEK_COMPARATOR));
     assert(Throw(Dice(1), Dice(1), MACHACEK_COMPARATOR) < Throw(Dice(4), Dice(4), MACHACEK_COMPARATOR));
     assert(Throw(Dice(6), Dice(6), MACHACEK_COMPARATOR) < Throw(Dice(1), Dice(2), MACHACEK_COMPARATOR));
+    assert(!(Throw(Dice(1), Dice(1), MACHACEK_COMPARATOR) < Throw(Dice(5), Dice(4), MACHACEK_COMPARATOR)));
+    assert(!(Throw(Dice(4), Dice(4), MACHACEK_COMPARATOR) < Throw(Dice(5), Dice(4), MACHACEK_COMPARATOR)));
 
     std::string choice = "";
     Player player;
@@ -250,16 +262,17 @@ int main(void)
                 {
                     std::cout << "Opponent really did throw that (-1 for you)" << std::endl;
                     player.hit();
+                    lastRound = opponentThrow;
                 }
 
-                if (choice[0] == 'b' && opponentThrow != opponent.getThrow())
+                else if (choice[0] == 'b' && opponentThrow != opponent.getThrow())
                 {
                     std::cout << "Opponent lied (-1 for him)" << std::endl;
                     opponent.hit();
+                    lastRound = Throw(Dice(3),Dice(1), MACHACEK_COMPARATOR);
                 }
                 opponent.roll();
                 playerTurn = true;
-                lastRound = opponentThrow;
             }
         }
 
@@ -276,9 +289,10 @@ int main(void)
                 {
                     std::cout << "You told the truth. The truth is, the throw isn't enough (-1 for you)" << std::endl;
                     player.hit();
+                    lastRound = Throw(Dice(3),Dice(1), MACHACEK_COMPARATOR);
                 }
 
-                size_t smaller = 0;
+                int smaller = 0;
                 for (const auto &thr : ALL_THROWS)
                 {
                     if (thr == player.getThrow())
@@ -296,12 +310,14 @@ int main(void)
                 {
                     std::cout << "Liar liar, pants on fire (-1 for you)" << std::endl;
                     player.hit();
+                    lastRound = Throw(Dice(3),Dice(1), MACHACEK_COMPARATOR);
                 }
 
-                if (opponentAccuse && !playerLying)
+                else if (opponentAccuse && !playerLying)
                 {
                     std::cout << "Opponent just couldn't believe it (-1 for him)" << std::endl;
                     opponent.hit();
+                    lastRound = player.getThrow();
                 }
 
                 playerTurn = false;
