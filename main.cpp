@@ -1,7 +1,9 @@
 #include <functional>
 #include <iostream>
 #include <cassert>
+#include <vector>
 #include <random>
+#include <ctime>
 
 const size_t DICE_MAX = 6;
 const size_t DICE_MIN = 1;
@@ -58,22 +60,22 @@ struct Throw
         m_Second.roll();
     }
 
-    bool operator<(const Throw &t)
+    bool operator<(const Throw &t) const
     {
         return m_Comp(*this, t);
     }
 
-    bool operator==(const Throw &t)
+    bool operator==(const Throw &t) const
     {
         return !m_Comp(*this, t) && !m_Comp(t, *this);
     }
 
-    bool operator!=(const Throw &t)
+    bool operator!=(const Throw &t) const
     {
         return !(*this == t);
     }
 
-    bool operator<=(const Throw &t)
+    bool operator<=(const Throw &t) const
     {
         return *this < t || *this == t;
     }
@@ -131,6 +133,30 @@ bool MACHACEK_COMPARATOR(const Throw &t1, const Throw &t2)
     return t1.value() < t2.value();
 }
 
+const std::vector<Throw> ALL_THROWS = {
+    Throw(Dice(3), Dice(1), MACHACEK_COMPARATOR),
+    Throw(Dice(3), Dice(2), MACHACEK_COMPARATOR),
+    Throw(Dice(4), Dice(1), MACHACEK_COMPARATOR),
+    Throw(Dice(4), Dice(2), MACHACEK_COMPARATOR),
+    Throw(Dice(4), Dice(3), MACHACEK_COMPARATOR),
+    Throw(Dice(5), Dice(1), MACHACEK_COMPARATOR),
+    Throw(Dice(5), Dice(1), MACHACEK_COMPARATOR),
+    Throw(Dice(5), Dice(2), MACHACEK_COMPARATOR),
+    Throw(Dice(5), Dice(3), MACHACEK_COMPARATOR),
+    Throw(Dice(5), Dice(4), MACHACEK_COMPARATOR),
+    Throw(Dice(6), Dice(1), MACHACEK_COMPARATOR),
+    Throw(Dice(6), Dice(2), MACHACEK_COMPARATOR),
+    Throw(Dice(6), Dice(3), MACHACEK_COMPARATOR),
+    Throw(Dice(6), Dice(4), MACHACEK_COMPARATOR),
+    Throw(Dice(6), Dice(5), MACHACEK_COMPARATOR),
+    Throw(Dice(1), Dice(1), MACHACEK_COMPARATOR),
+    Throw(Dice(2), Dice(2), MACHACEK_COMPARATOR),
+    Throw(Dice(3), Dice(3), MACHACEK_COMPARATOR),
+    Throw(Dice(4), Dice(4), MACHACEK_COMPARATOR),
+    Throw(Dice(5), Dice(5), MACHACEK_COMPARATOR),
+    Throw(Dice(6), Dice(6), MACHACEK_COMPARATOR),
+    Throw(Dice(2), Dice(1), MACHACEK_COMPARATOR)};
+
 struct Player
 {
     Player(size_t health = PLAYER_HEALTH, const Throw &thr = Throw(Dice(), Dice(), MACHACEK_COMPARATOR))
@@ -144,14 +170,23 @@ struct Player
         m_Throw.reroll();
     }
 
-    bool hit(void)
+    const Throw &getThrow(void) const
+    {
+        return m_Throw;
+    }
+
+    size_t health(void)
+    {
+        return m_Health;
+    }
+
+    size_t hit(void)
     {
         if (m_Health)
         {
-            m_Health--;
-            return true;
+            return m_Health--;
         }
-        return false;
+        return m_Health;
     }
 
     friend std::ostream &operator<<(std::ostream &os, const Player &p)
@@ -179,20 +214,52 @@ int main(void)
     opponent.roll();
 
     bool playerTurn = false;
+    bool playerLying = false;
+
+    Throw lastRound = opponent.getThrow();
 
     while (choice != "stop")
     {
+        if (!player.hit())
+        {
+            std::cout << "You lost!" << std::endl;
+        }
+
+        if (!opponent.hit())
+        {
+            std::cout << "You won!" << std::endl;
+        }
+
         if (!playerTurn)
         {
-            std::cout << "Opponent says: \"I have " << opponent << "\"" << std::endl;
+            Throw opponentThrow = opponent.getThrow();
+            while (opponentThrow < lastRound)
+            {
+                Player opponentCpy = opponent;
+                opponentCpy.roll();
+                opponentThrow = opponentCpy.getThrow();
+            }
+            std::cout << "Opponent says: \"I have " << opponentThrow << "\"" << std::endl;
             std::cout << "-> b(ullshit), t(rust): ";
 
             std::getline(std::cin >> std::ws, choice);
 
             if (choice.size() == 1 && (choice[0] == 'b' || choice[0] == 't'))
             {
+                if (choice[0] == 'b' && opponentThrow == opponent.getThrow())
+                {
+                    std::cout << "Opponent really did throw that (-1 for you)" << std::endl;
+                    player.hit();
+                }
+
+                if (choice[0] == 'b' && opponentThrow != opponent.getThrow())
+                {
+                    std::cout << "Opponent lied (-1 for him)" << std::endl;
+                    opponent.hit();
+                }
                 opponent.roll();
                 playerTurn = true;
+                lastRound = opponentThrow;
             }
         }
 
@@ -203,7 +270,53 @@ int main(void)
             std::cout << "-> t(ell the truth), f(ake)[1-6][1-6]: ";
             std::getline(std::cin >> std::ws, choice);
 
-            playerTurn = false;
+            if (choice.size() == 1 && choice[0] == 't')
+            {
+                if (player.getThrow() < lastRound)
+                {
+                    std::cout << "You told the truth. The truth is, the throw isn't enough (-1 for you)" << std::endl;
+                    player.hit();
+                }
+
+                size_t smaller = 0;
+                for (const auto &thr : ALL_THROWS)
+                {
+                    if (thr == player.getThrow())
+                        break;
+                    smaller++;
+                }
+
+                std::random_device device;
+                std::mt19937 gen(device());
+                std::uniform_int_distribution<int> dist(0, ALL_THROWS.size());
+
+                bool opponentAccuse = dist(gen) < smaller;
+
+                if (opponentAccuse && playerLying)
+                {
+                    std::cout << "Liar liar, pants on fire (-1 for you)" << std::endl;
+                    player.hit();
+                }
+
+                if (opponentAccuse && !playerLying)
+                {
+                    std::cout << "Opponent just couldn't believe it (-1 for him)" << std::endl;
+                    opponent.hit();
+                }
+
+                playerTurn = false;
+                playerLying = false;
+            }
+
+            else if (choice.size() == 3 && choice[0] == 'f' && isdigit(choice[1]) && isdigit(choice[2]))
+            {
+                int n = std::stoi(choice.substr(1));
+                if (n >= 11 && n <= 66)
+                {
+                    player = Player(player.health(), Throw(Dice(std::floor(n / 10)), Dice(n % 10), MACHACEK_COMPARATOR));
+                    playerLying = true;
+                }
+            }
         }
     }
     return 0;
